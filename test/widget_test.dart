@@ -1,30 +1,35 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:tracker/main.dart';
+import 'package:tracker/models.dart';
+import 'package:tracker/utils.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  test('formatDistance affiche mètres puis kilomètres', () {
+    expect(formatDistance(42), '40 m');
+    expect(formatDistance(1240), '1,2 km');
+    expect(formatDistance(23600), '24 km');
+  });
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+  test('isInBenin valide les coordonnées', () {
+    expect(isInBenin(6.3654, 2.4183), isTrue); // Cotonou
+    expect(isInBenin(9.3372, 2.6303), isTrue); // Parakou
+    expect(isInBenin(48.8566, 2.3522), isFalse); // Paris
+  });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+  test('une pharmacie est de garde uniquement pendant sa période', () {
+    final week = currentWeek();
+    final p = Pharmacy(
+      id: 'p',
+      name: 'Test',
+      address: '',
+      city: 'Cotonou',
+      phone: '',
+      lat: 6.36,
+      lng: 2.41,
+      dutyStart: week.start,
+      dutyEnd: week.end,
+    );
+    expect(p.isOnDutyAt(DateTime.now()), isTrue);
+    expect(p.isOnDutyAt(week.end), isFalse);
+    expect(p.withDuty(null, null).isOnDutyAt(DateTime.now()), isFalse);
   });
 }
