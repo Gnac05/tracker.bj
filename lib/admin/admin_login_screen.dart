@@ -53,18 +53,20 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
           children: [
-            Container(
-              width: 64,
-              height: 64,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: AppColors.ink,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Icon(
-                Icons.admin_panel_settings_rounded,
-                color: AppColors.yellow,
-                size: 34,
+            Center(
+              child: Container(
+                width: 64,
+                height: 64,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: AppColors.ink,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Icon(
+                  Icons.admin_panel_settings_rounded,
+                  color: AppColors.yellow,
+                  size: 34,
+                ),
               ),
             ),
             const SizedBox(height: 20),
