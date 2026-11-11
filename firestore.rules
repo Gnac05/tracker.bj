@@ -1,0 +1,47 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Un administrateur est un compte dont l'UID possède un document
+    // dans la collection « admins » (créé à la main dans la console).
+    function isAdmin() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // Lecture publique, écriture réservée aux administrateurs.
+    match /stations/{stationId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /pharmacies/{pharmacyId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Signalements : tout utilisateur (connexion anonyme) peut en créer un,
+    // toujours « en attente ». Seul un administrateur peut les lire,
+    // les certifier ou les rejeter.
+    match /reports/{reportId} {
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly([
+             'stationId', 'stationName', 'hasFuel', 'userId', 'photoUrl',
+             'distanceMeters', 'status', 'createdAt'])
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.hasFuel is bool
+        && request.resource.data.photoUrl is string
+        && request.resource.data.createdAt == request.time
+        && exists(/databases/$(database)/documents/stations/$(request.resource.data.stationId));
+      allow read, update, delete: if isAdmin();
+    }
+
+    // Chacun peut seulement vérifier son propre rôle ; aucune écriture
+    // depuis l'application.
+    match /admins/{uid} {
+      allow get: if request.auth != null && request.auth.uid == uid;
+    }
+  }
+}
