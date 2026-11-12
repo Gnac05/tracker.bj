@@ -72,6 +72,8 @@ class LocationService extends ChangeNotifier {
       Geolocator.distanceBetween(lat, lng, toLat, toLng);
 
   Future<void> openSettings() async {
+    // Dans un navigateur, l'autorisation se règle dans la barre d'adresse.
+    if (kIsWeb) return;
     if (state == LocationState.serviceOff) {
       await Geolocator.openLocationSettings();
     } else {
