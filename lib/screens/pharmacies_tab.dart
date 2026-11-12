@@ -5,6 +5,7 @@ import '../services/repository.dart';
 import '../theme.dart';
 import '../utils.dart';
 import '../widgets/common.dart';
+import 'reviews_screen.dart';
 
 class PharmaciesTab extends StatefulWidget {
   const PharmaciesTab({super.key});
@@ -206,6 +207,14 @@ class _PharmacyCard extends StatelessWidget {
                           color: AppColors.muted,
                           fontSize: 13.5,
                         ),
+                      ),
+                      const SizedBox(height: 4),
+                      RatingLink(
+                        placeId: pharmacy.id,
+                        placeName: pharmacy.name,
+                        isPharmacy: true,
+                        rating: pharmacy.rating,
+                        count: pharmacy.ratingCount,
                       ),
                     ],
                   ),

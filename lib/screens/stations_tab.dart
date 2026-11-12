@@ -6,6 +6,7 @@ import '../theme.dart';
 import '../utils.dart';
 import '../widgets/common.dart';
 import 'report_screen.dart';
+import 'reviews_screen.dart';
 
 class StationsTab extends StatefulWidget {
   const StationsTab({super.key});
@@ -174,6 +175,14 @@ class _StationCard extends StatelessWidget {
                           color: AppColors.muted,
                           fontSize: 13.5,
                         ),
+                      ),
+                      const SizedBox(height: 4),
+                      RatingLink(
+                        placeId: station.id,
+                        placeName: station.name,
+                        isPharmacy: false,
+                        rating: station.rating,
+                        count: station.ratingCount,
                       ),
                     ],
                   ),

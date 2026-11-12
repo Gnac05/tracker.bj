@@ -45,6 +45,7 @@ class DemoRepository implements Repository {
       city: city,
       lat: lat,
       lng: lng,
+      department: departmentOfCity(city) ?? '',
       status: s,
       statusUpdatedAt: s == FuelStatus.unknown
           ? null
@@ -65,6 +66,7 @@ class DemoRepository implements Repository {
       phone: '01 00 00 00 0${id.substring(1)}',
       lat: lat,
       lng: lng,
+      department: departmentOfCity(city) ?? '',
       dutyStart: duty ? week.start : null,
       dutyEnd: duty ? week.end : null,
     );
@@ -164,8 +166,44 @@ class DemoRepository implements Repository {
         distanceMeters: 1240,
       ),
     ]);
+    Review rv(
+      String place,
+      String user,
+      String author,
+      int rating,
+      String comment,
+      int hoursAgo,
+    ) => Review(
+      id: '${place}_$user',
+      placeId: place,
+      isPharmacy: place.startsWith('p'),
+      userId: user,
+      authorName: author,
+      rating: rating,
+      comment: comment,
+      updatedAt: now.subtract(Duration(hours: hoursAgo)),
+    );
+    _reviews = _Store([
+      rv(
+        's1',
+        'u1',
+        'Koffi',
+        5,
+        'Servi en cinq minutes, pompistes aimables.',
+        3,
+      ),
+      rv('s1', 'u2', 'Aïcha', 4, 'Un peu de file le matin mais ça avance.', 26),
+      rv('s1', 'u3', '', 3, '', 80),
+      rv('s2', 'u1', 'Koffi', 2, 'Souvent en rupture le week-end.', 50),
+      rv('p1', 'u2', 'Aïcha', 5, 'Ouverte toute la nuit, bon accueil.', 5),
+      rv('p1', 'u4', 'Rodrigue', 4, 'Bien approvisionnée.', 40),
+    ]);
+    for (final id in {for (final r in _reviews.items) r.placeId}) {
+      _recount(id, id.startsWith('p'));
+    }
   }
 
+  late final _Store<Review> _reviews;
   late final _Store<Station> _stations;
   late final _Store<Pharmacy> _pharmacies;
   late final _Store<FuelReport> _reports;
@@ -255,19 +293,9 @@ class DemoRepository implements Repository {
   Future<void> saveStation(Station station) async {
     await _lag();
     if (station.id.isEmpty) {
-      final m = station.toMap();
       _stations.update([
         ..._stations.items,
-        Station(
-          id: 's${_seq++}',
-          name: station.name,
-          address: station.address,
-          city: station.city,
-          lat: station.lat,
-          lng: station.lng,
-          status: FuelStatus.parse(m['status'] as String?),
-          statusUpdatedAt: station.statusUpdatedAt,
-        ),
+        station.copyWith(id: 's${_seq++}'),
       ]);
     } else {
       _stations.update([
@@ -287,15 +315,7 @@ class DemoRepository implements Repository {
     if (pharmacy.id.isEmpty) {
       _pharmacies.update([
         ..._pharmacies.items,
-        Pharmacy(
-          id: 'p${_seq++}',
-          name: pharmacy.name,
-          address: pharmacy.address,
-          city: pharmacy.city,
-          phone: pharmacy.phone,
-          lat: pharmacy.lat,
-          lng: pharmacy.lng,
-        ),
+        pharmacy.copyWith(id: 'p${_seq++}'),
       ]);
     } else {
       _pharmacies.update([
@@ -323,5 +343,68 @@ class DemoRepository implements Repository {
         else
           p,
     ]);
+  }
+
+  @override
+  String? get currentUserId => 'demo';
+
+  @override
+  Stream<List<Review>> watchReviews(String placeId) => _reviews.watch().map(
+    (l) =>
+        l.where((r) => r.placeId == placeId).toList()
+          ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt)),
+  );
+
+  @override
+  Future<void> submitReview({
+    required String placeId,
+    required bool isPharmacy,
+    required int rating,
+    required String comment,
+    required String authorName,
+  }) async {
+    await _lag();
+    final id = '${placeId}_demo';
+    _reviews.update([
+      Review(
+        id: id,
+        placeId: placeId,
+        isPharmacy: isPharmacy,
+        userId: 'demo',
+        authorName: authorName,
+        rating: rating,
+        comment: comment,
+        updatedAt: DateTime.now(),
+      ),
+      ..._reviews.items.where((r) => r.id != id),
+    ]);
+    _recount(placeId, isPharmacy);
+  }
+
+  @override
+  Future<void> deleteReview(Review review) async {
+    _reviews.update(_reviews.items.where((r) => r.id != review.id).toList());
+    _recount(review.placeId, review.isPharmacy);
+  }
+
+  /// Recalcule la note agrégée d'un lieu à partir de ses avis.
+  void _recount(String placeId, bool isPharmacy) {
+    final rs = _reviews.items.where((r) => r.placeId == placeId);
+    final sum = rs.fold(0, (a, r) => a + r.rating);
+    if (isPharmacy) {
+      _pharmacies.update([
+        for (final p in _pharmacies.items)
+          p.id == placeId
+              ? p.copyWith(ratingSum: sum, ratingCount: rs.length)
+              : p,
+      ]);
+    } else {
+      _stations.update([
+        for (final s in _stations.items)
+          s.id == placeId
+              ? s.copyWith(ratingSum: sum, ratingCount: rs.length)
+              : s,
+      ]);
+    }
   }
 }

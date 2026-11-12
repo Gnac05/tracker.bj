@@ -27,6 +27,26 @@ abstract class Repository {
     double? distanceMeters,
   });
 
+  // ----- Avis des usagers -----
+  /// Identifiant de l'usager courant (null s'il n'a encore rien envoyé).
+  String? get currentUserId;
+
+  /// Avis d'un lieu, du plus récent au plus ancien.
+  Stream<List<Review>> watchReviews(String placeId);
+
+  /// Crée ou remplace l'avis de l'usager courant sur ce lieu et met à jour
+  /// la note moyenne.
+  Future<void> submitReview({
+    required String placeId,
+    required bool isPharmacy,
+    required int rating,
+    required String comment,
+    required String authorName,
+  });
+
+  /// Modération : suppression d'un avis par un administrateur.
+  Future<void> deleteReview(Review review);
+
   // ----- Back office -----
   Future<void> signInAdmin(String email, String password);
   Future<void> signOutAdmin();

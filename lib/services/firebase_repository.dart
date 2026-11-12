@@ -26,6 +26,9 @@ class FirebaseRepository implements Repository {
   CollectionReference<Map<String, dynamic>> get _reports =>
       _db.collection('reports');
 
+  CollectionReference<Map<String, dynamic>> get _reviews =>
+      _db.collection('reviews');
+
   @override
   bool get isDemo => false;
 
@@ -146,18 +149,19 @@ class FirebaseRepository implements Repository {
     return batch.commit();
   }
 
+  // « merge » : ne jamais écraser la note agrégée (ratingSum / ratingCount).
   @override
-  Future<void> saveStation(Station station) => station.id.isEmpty
-      ? _stations.add(station.toMap())
-      : _stations.doc(station.id).set(station.toMap());
+  Future<void> saveStation(Station station) => _stations
+      .doc(station.id.isEmpty ? null : station.id)
+      .set(station.toMap(), SetOptions(merge: true));
 
   @override
   Future<void> deleteStation(String id) => _stations.doc(id).delete();
 
   @override
-  Future<void> savePharmacy(Pharmacy pharmacy) => pharmacy.id.isEmpty
-      ? _pharmacies.add(pharmacy.toMap())
-      : _pharmacies.doc(pharmacy.id).set(pharmacy.toMap());
+  Future<void> savePharmacy(Pharmacy pharmacy) => _pharmacies
+      .doc(pharmacy.id.isEmpty ? null : pharmacy.id)
+      .set(pharmacy.toMap(), SetOptions(merge: true));
 
   @override
   Future<void> deletePharmacy(String id) => _pharmacies.doc(id).delete();
@@ -189,5 +193,69 @@ class FirebaseRepository implements Repository {
       }
     }
     if (count > 0) await batch.commit();
+  }
+
+  @override
+  String? get currentUserId => _auth.currentUser?.uid;
+
+  @override
+  Stream<List<Review>> watchReviews(String placeId) => _reviews
+      .where('placeId', isEqualTo: placeId)
+      .orderBy('updatedAt', descending: true)
+      .limit(200)
+      .snapshots()
+      .map((s) => s.docs.map((d) => Review.fromMap(d.id, d.data())).toList());
+
+  DocumentReference<Map<String, dynamic>> _place(String id, bool isPharmacy) =>
+      (isPharmacy ? _pharmacies : _stations).doc(id);
+
+  @override
+  Future<void> submitReview({
+    required String placeId,
+    required bool isPharmacy,
+    required int rating,
+    required String comment,
+    required String authorName,
+  }) async {
+    final user = _auth.currentUser ?? (await _auth.signInAnonymously()).user!;
+    // Un seul avis par usager et par lieu : l'identifiant est déterministe.
+    final ref = _reviews.doc('${placeId}_${user.uid}');
+    final placeRef = _place(placeId, isPharmacy);
+    await _db.runTransaction((tx) async {
+      final old = await tx.get(ref);
+      final place = await tx.get(placeRef);
+      final sum = (place.data()?['ratingSum'] as num?)?.toInt() ?? 0;
+      final count = (place.data()?['ratingCount'] as num?)?.toInt() ?? 0;
+      final oldRating = (old.data()?['rating'] as num?)?.toInt() ?? 0;
+      tx.set(ref, {
+        'placeId': placeId,
+        'placeType': isPharmacy ? 'pharmacy' : 'station',
+        'userId': user.uid,
+        'authorName': authorName,
+        'rating': rating,
+        'comment': comment,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      tx.update(placeRef, {
+        'ratingSum': sum + rating - oldRating,
+        'ratingCount': old.exists ? count : count + 1,
+      });
+    });
+  }
+
+  @override
+  Future<void> deleteReview(Review review) {
+    final placeRef = _place(review.placeId, review.isPharmacy);
+    return _db.runTransaction((tx) async {
+      final place = await tx.get(placeRef);
+      tx.delete(_reviews.doc(review.id));
+      if (!place.exists) return;
+      final sum = (place.data()?['ratingSum'] as num?)?.toInt() ?? 0;
+      final count = (place.data()?['ratingCount'] as num?)?.toInt() ?? 0;
+      tx.update(placeRef, {
+        'ratingSum': (sum - review.rating).clamp(0, 1 << 31),
+        'ratingCount': (count - 1).clamp(0, 1 << 31),
+      });
+    });
   }
 }

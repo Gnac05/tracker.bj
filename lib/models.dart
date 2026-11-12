@@ -26,8 +26,11 @@ class Station {
     required this.city,
     required this.lat,
     required this.lng,
+    this.department = '',
     this.status = FuelStatus.unknown,
     this.statusUpdatedAt,
+    this.ratingSum = 0,
+    this.ratingCount = 0,
   });
 
   final String id;
@@ -36,7 +39,13 @@ class Station {
   final String city;
   final double lat;
   final double lng;
+  final String department;
   final FuelStatus status;
+
+  /// Somme et nombre des notes des usagers (agrégat mis à jour à chaque avis).
+  final int ratingSum;
+  final int ratingCount;
+  double? get rating => ratingCount == 0 ? null : ratingSum / ratingCount;
 
   /// Date de la dernière certification par un administrateur.
   final DateTime? statusUpdatedAt;
@@ -48,8 +57,11 @@ class Station {
     city: m['city'] as String? ?? '',
     lat: _num(m['lat']),
     lng: _num(m['lng']),
+    department: m['department'] as String? ?? '',
     status: FuelStatus.parse(m['status'] as String?),
     statusUpdatedAt: _date(m['statusUpdatedAt']),
+    ratingSum: (m['ratingSum'] as num?)?.toInt() ?? 0,
+    ratingCount: (m['ratingCount'] as num?)?.toInt() ?? 0,
   );
 
   Map<String, dynamic> toMap() => {
@@ -58,19 +70,29 @@ class Station {
     'city': city,
     'lat': lat,
     'lng': lng,
+    'department': department,
     'status': status.name,
     'statusUpdatedAt': _ts(statusUpdatedAt),
   };
 
-  Station copyWith({FuelStatus? status, DateTime? statusUpdatedAt}) => Station(
-    id: id,
+  Station copyWith({
+    String? id,
+    FuelStatus? status,
+    DateTime? statusUpdatedAt,
+    int? ratingSum,
+    int? ratingCount,
+  }) => Station(
+    id: id ?? this.id,
     name: name,
     address: address,
     city: city,
     lat: lat,
     lng: lng,
+    department: department,
     status: status ?? this.status,
     statusUpdatedAt: statusUpdatedAt ?? this.statusUpdatedAt,
+    ratingSum: ratingSum ?? this.ratingSum,
+    ratingCount: ratingCount ?? this.ratingCount,
   );
 }
 
@@ -83,8 +105,11 @@ class Pharmacy {
     required this.phone,
     required this.lat,
     required this.lng,
+    this.department = '',
     this.dutyStart,
     this.dutyEnd,
+    this.ratingSum = 0,
+    this.ratingCount = 0,
   });
 
   final String id;
@@ -94,6 +119,10 @@ class Pharmacy {
   final String phone;
   final double lat;
   final double lng;
+  final String department;
+  final int ratingSum;
+  final int ratingCount;
+  double? get rating => ratingCount == 0 ? null : ratingSum / ratingCount;
 
   /// Période de garde en cours ou à venir (liste officielle hebdomadaire).
   final DateTime? dutyStart;
@@ -113,8 +142,11 @@ class Pharmacy {
     phone: m['phone'] as String? ?? '',
     lat: _num(m['lat']),
     lng: _num(m['lng']),
+    department: m['department'] as String? ?? '',
     dutyStart: _date(m['dutyStart']),
     dutyEnd: _date(m['dutyEnd']),
+    ratingSum: (m['ratingSum'] as num?)?.toInt() ?? 0,
+    ratingCount: (m['ratingCount'] as num?)?.toInt() ?? 0,
   );
 
   Map<String, dynamic> toMap() => {
@@ -124,20 +156,37 @@ class Pharmacy {
     'phone': phone,
     'lat': lat,
     'lng': lng,
+    'department': department,
     'dutyStart': _ts(dutyStart),
     'dutyEnd': _ts(dutyEnd),
   };
 
-  Pharmacy withDuty(DateTime? start, DateTime? end) => Pharmacy(
-    id: id,
+  Pharmacy withDuty(DateTime? start, DateTime? end) =>
+      _copy(dutyStart: start, dutyEnd: end, keepDuty: false);
+
+  Pharmacy copyWith({String? id, int? ratingSum, int? ratingCount}) =>
+      _copy(id: id, ratingSum: ratingSum, ratingCount: ratingCount);
+
+  Pharmacy _copy({
+    String? id,
+    DateTime? dutyStart,
+    DateTime? dutyEnd,
+    bool keepDuty = true,
+    int? ratingSum,
+    int? ratingCount,
+  }) => Pharmacy(
+    id: id ?? this.id,
     name: name,
     address: address,
     city: city,
     phone: phone,
     lat: lat,
     lng: lng,
-    dutyStart: start,
-    dutyEnd: end,
+    department: department,
+    dutyStart: keepDuty ? this.dutyStart : dutyStart,
+    dutyEnd: keepDuty ? this.dutyEnd : dutyEnd,
+    ratingSum: ratingSum ?? this.ratingSum,
+    ratingCount: ratingCount ?? this.ratingCount,
   );
 }
 
@@ -209,5 +258,42 @@ class FuelReport {
     distanceMeters: distanceMeters,
     status: s,
     reviewedAt: DateTime.now(),
+  );
+}
+
+/// Avis d'un usager sur une station ou une pharmacie (un seul par usager
+/// et par lieu, modifiable).
+class Review {
+  const Review({
+    required this.id,
+    required this.placeId,
+    required this.isPharmacy,
+    required this.userId,
+    required this.authorName,
+    required this.rating,
+    required this.comment,
+    required this.updatedAt,
+  });
+
+  final String id;
+  final String placeId;
+  final bool isPharmacy;
+  final String userId;
+  final String authorName;
+
+  /// Note de 1 à 5.
+  final int rating;
+  final String comment;
+  final DateTime updatedAt;
+
+  factory Review.fromMap(String id, Map<String, dynamic> m) => Review(
+    id: id,
+    placeId: m['placeId'] as String? ?? '',
+    isPharmacy: m['placeType'] == 'pharmacy',
+    userId: m['userId'] as String? ?? '',
+    authorName: m['authorName'] as String? ?? '',
+    rating: (m['rating'] as num?)?.toInt() ?? 0,
+    comment: m['comment'] as String? ?? '',
+    updatedAt: _date(m['updatedAt']) ?? DateTime.now(),
   );
 }

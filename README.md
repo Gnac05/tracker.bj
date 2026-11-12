@@ -6,6 +6,7 @@ Application mobile Flutter + Firebase pour le Bénin :
 - **Pharmacies** : pharmacies de garde de la semaine (liste officielle), de la plus proche à la plus éloignée.
 - **Itinéraire** Google Maps en un geste, appel direct des pharmacies.
 - **Signalement** : tout utilisateur indique s'il y a de l'essence ou non, avec une photo prise sur place (appareil photo uniquement, jamais la galerie).
+- **Avis des usagers** : note de 1 à 5 étoiles et commentaire sur chaque station et pharmacie, note moyenne et avis des autres visibles par tous.
 - **Back office intégré** (icône bouclier en haut à droite) : certification des signalements, annuaire des stations et des pharmacies, publication hebdomadaire de la liste de garde.
 
 ## Essayer tout de suite (mode démo)
@@ -59,14 +60,29 @@ Dans ce mode, n'importe quel e-mail et mot de passe ouvrent le back office.
 | --- | --- |
 | Signalements | Voir la photo, la distance entre l'utilisateur et la station, puis **Certifier** (met à jour la station) ou **Rejeter**. |
 | Garde de la semaine | Choisir la période, cocher les pharmacies de la liste officielle, **Publier**. |
-| Stations / Pharmacies | Ajouter, modifier, supprimer. La position se saisit sur place (« Utiliser ma position ») ou depuis Google Maps. |
+| Stations / Pharmacies | Ajouter, modifier, supprimer. Le formulaire se remplit depuis Google Maps (voir ci-dessous) ou avec « Utiliser ma position ». |
+
+Un administrateur connecté voit aussi une corbeille sur chaque avis pour le supprimer (modération).
+
+### Import depuis Google Maps
+
+Dans Google Maps : ouvrir le lieu → **Partager** → **Copier**, puis coller dans la carte « Importer depuis Google Maps » du formulaire. Sont acceptés :
+
+- un lien complet `https://www.google.com/maps/place/...` ;
+- un lien court `https://maps.app.goo.gl/...` (résolu par l'application, mobile uniquement) ;
+- des coordonnées copiées par appui long sur la carte (`6.3654, 2.4183`).
+
+Le nom et la position viennent du lien ; le quartier, la ville et le département sont complétés par géocodage inverse (géocodeur du téléphone, puis OpenStreetMap Nominatim en secours). Aucune clé d'API n'est nécessaire.
+
+Si le lien ne contient pas les coordonnées exactes du lieu, la position est retrouvée par recherche du nom et signalée comme **approximative** : il faut alors la vérifier ou coller les coordonnées.
 
 ## Données Firestore
 
 | Collection | Champs |
 | --- | --- |
-| `stations` | `name`, `address`, `city`, `lat`, `lng`, `status` (`available` / `unavailable` / `unknown`), `statusUpdatedAt` |
-| `pharmacies` | `name`, `address`, `city`, `phone`, `lat`, `lng`, `dutyStart`, `dutyEnd` |
+| `stations` | `name`, `address`, `city`, `department`, `lat`, `lng`, `status` (`available` / `unavailable` / `unknown`), `statusUpdatedAt`, `ratingSum`, `ratingCount` |
+| `pharmacies` | `name`, `address`, `city`, `department`, `phone`, `lat`, `lng`, `dutyStart`, `dutyEnd`, `ratingSum`, `ratingCount` |
+| `reviews` | ID `<lieu>_<uid>` ; `placeId`, `placeType` (`station` / `pharmacy`), `userId`, `authorName`, `rating` (1 à 5), `comment`, `updatedAt` |
 | `reports` | `stationId`, `stationName`, `hasFuel`, `userId`, `photoUrl`, `distanceMeters`, `status` (`pending` / `approved` / `rejected`), `createdAt`, `reviewedAt`, `reviewedBy` |
 | `admins` | un document par UID administrateur |
 
