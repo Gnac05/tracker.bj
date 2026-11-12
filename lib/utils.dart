@@ -26,6 +26,89 @@ const beninCities = [
   'Autre',
 ];
 
+/// Les 12 départements du Bénin.
+const beninDepartments = [
+  'Alibori',
+  'Atacora',
+  'Atlantique',
+  'Borgou',
+  'Collines',
+  'Couffo',
+  'Donga',
+  'Littoral',
+  'Mono',
+  'Ouémé',
+  'Plateau',
+  'Zou',
+];
+
+const _cityDepartment = {
+  'Cotonou': 'Littoral',
+  'Abomey-Calavi': 'Atlantique',
+  'Ouidah': 'Atlantique',
+  'Allada': 'Atlantique',
+  'Porto-Novo': 'Ouémé',
+  'Sèmè-Kpodji': 'Ouémé',
+  'Bohicon': 'Zou',
+  'Abomey': 'Zou',
+  'Lokossa': 'Mono',
+  'Comé': 'Mono',
+  'Dassa-Zoumè': 'Collines',
+  'Savalou': 'Collines',
+  'Parakou': 'Borgou',
+  'Djougou': 'Donga',
+  'Natitingou': 'Atacora',
+  'Kandi': 'Alibori',
+  'Malanville': 'Alibori',
+  'Pobè': 'Plateau',
+  'Kétou': 'Plateau',
+};
+
+/// Minuscules sans accents, pour comparer des noms de lieux.
+String normalizePlace(String s) {
+  const from = 'àâäáãéèêëíìîïóòôöõúùûüçñ';
+  const to = 'aaaaaeeeeiiiiooooouuuucn';
+  final b = StringBuffer();
+  for (final ch in s.toLowerCase().split('')) {
+    final i = from.indexOf(ch);
+    b.write(i < 0 ? ch : to[i]);
+  }
+  return b.toString().replaceAll(RegExp(r'[^a-z0-9]+'), ' ').trim();
+}
+
+/// Département correspondant à une ville connue (sinon null).
+String? departmentOfCity(String city) {
+  final n = normalizePlace(city);
+  for (final e in _cityDepartment.entries) {
+    if (normalizePlace(e.key) == n) return e.value;
+  }
+  return null;
+}
+
+/// Retrouve un département dans un libellé libre
+/// (« Littoral Department », « Département de l'Ouémé »…).
+String? matchDepartment(String? label) {
+  if (label == null) return null;
+  final words = normalizePlace(label).split(' ');
+  for (final d in beninDepartments) {
+    if (words.contains(normalizePlace(d))) return d;
+  }
+  return null;
+}
+
+/// Ville de la liste correspondant à un libellé libre (sinon null).
+String? matchCity(String? label) {
+  if (label == null) return null;
+  final n = normalizePlace(label);
+  for (final c in beninCities) {
+    if (c != 'Autre' && normalizePlace(c) == n) return c;
+  }
+  return null;
+}
+
+/// « 4,3 » : note moyenne à une décimale.
+String formatRating(double r) => r.toStringAsFixed(1).replaceAll('.', ',');
+
 /// Limites géographiques approximatives du Bénin (validation des saisies).
 bool isInBenin(double lat, double lng) =>
     lat >= 6.0 && lat <= 12.6 && lng >= 0.7 && lng <= 3.9;

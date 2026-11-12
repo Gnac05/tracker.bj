@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../models.dart';
+import '../services/maps_import.dart';
 import '../services/repository.dart';
 import '../theme.dart';
 import '../utils.dart';
@@ -39,10 +41,17 @@ class _PlaceFormScreenState extends State<PlaceFormScreen> {
   late final _lng = TextEditingController(
     text: (widget.station?.lng ?? widget.pharmacy?.lng)?.toString(),
   );
-  late String _city = () {
-    final c = widget.station?.city ?? widget.pharmacy?.city;
-    return c != null && beninCities.contains(c) ? c : beninCities.first;
+  final _mapsLink = TextEditingController();
+  late String _city =
+      widget.station?.city ?? widget.pharmacy?.city ?? beninCities.first;
+  late String _department = () {
+    final d = widget.station?.department ?? widget.pharmacy?.department ?? '';
+    return d.isNotEmpty ? d : (departmentOfCity(_city) ?? '');
   }();
+  bool _importing = false;
+
+  /// Résumé du dernier import Google Maps (null tant qu'aucun import).
+  MapsPlace? _imported;
   late FuelStatus _status = widget.station?.status ?? FuelStatus.unknown;
   bool _busy = false;
 
@@ -52,7 +61,7 @@ class _PlaceFormScreenState extends State<PlaceFormScreen> {
 
   @override
   void dispose() {
-    for (final c in [_name, _address, _phone, _lat, _lng]) {
+    for (final c in [_name, _address, _phone, _lat, _lng, _mapsLink]) {
       c.dispose();
     }
     super.dispose();
@@ -87,6 +96,48 @@ class _PlaceFormScreenState extends State<PlaceFormScreen> {
     }
   }
 
+  Future<void> _pasteLink() async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    final text = data?.text?.trim() ?? '';
+    if (!mounted) return;
+    if (text.isEmpty) {
+      showMessage(context, 'Le presse-papiers est vide.', error: true);
+      return;
+    }
+    _mapsLink.text = text;
+    _import();
+  }
+
+  /// Remplit le formulaire à partir d'un lien ou d'un partage Google Maps.
+  Future<void> _import() async {
+    final text = _mapsLink.text.trim();
+    if (text.isEmpty) {
+      showMessage(context, 'Collez d\'abord un lien Google Maps.', error: true);
+      return;
+    }
+    FocusScope.of(context).unfocus();
+    setState(() => _importing = true);
+    try {
+      final p = await importFromGoogleMaps(text);
+      if (!mounted) return;
+      setState(() {
+        _imported = p;
+        if (p.name != null) _name.text = p.name!;
+        if (p.address != null) _address.text = p.address!;
+        _lat.text = p.lat!.toStringAsFixed(7);
+        _lng.text = p.lng!.toStringAsFixed(7);
+        if (p.city != null) _city = matchCity(p.city) ?? p.city!;
+        _department = p.department ?? departmentOfCity(_city) ?? _department;
+      });
+    } on MapsImportException catch (e) {
+      if (mounted) showMessage(context, e.message, error: true);
+    } catch (_) {
+      if (mounted) showMessage(context, 'Import impossible.', error: true);
+    } finally {
+      if (mounted) setState(() => _importing = false);
+    }
+  }
+
   void _save() {
     if (!_form.currentState!.validate()) return;
     final lat = _parse(_lat.text)!;
@@ -103,8 +154,11 @@ class _PlaceFormScreenState extends State<PlaceFormScreen> {
             phone: _phone.text.trim(),
             lat: lat,
             lng: lng,
+            department: _department,
             dutyStart: old?.dutyStart,
             dutyEnd: old?.dutyEnd,
+            ratingSum: old?.ratingSum ?? 0,
+            ratingCount: old?.ratingCount ?? 0,
           ),
         ),
         'Pharmacie enregistrée.',
@@ -120,6 +174,9 @@ class _PlaceFormScreenState extends State<PlaceFormScreen> {
             city: _city,
             lat: lat,
             lng: lng,
+            department: _department,
+            ratingSum: old?.ratingSum ?? 0,
+            ratingCount: old?.ratingCount ?? 0,
             status: _status,
             statusUpdatedAt: _status == old?.status
                 ? old?.statusUpdatedAt
@@ -182,6 +239,14 @@ class _PlaceFormScreenState extends State<PlaceFormScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
           children: [
+            _MapsImportCard(
+              controller: _mapsLink,
+              busy: _importing,
+              imported: _imported,
+              onPaste: _pasteLink,
+              onImport: _import,
+            ),
+            const SizedBox(height: 18),
             TextFormField(
               controller: _name,
               validator: _required,
@@ -203,14 +268,44 @@ class _PlaceFormScreenState extends State<PlaceFormScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              initialValue: _city,
-              decoration: const InputDecoration(labelText: 'Ville'),
-              items: [
-                for (final c in beninCities)
-                  DropdownMenuItem(value: c, child: Text(c)),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    key: ValueKey('city-$_city'),
+                    initialValue: _city,
+                    isExpanded: true,
+                    decoration: const InputDecoration(labelText: 'Ville'),
+                    items: [
+                      for (final c in {...beninCities, _city})
+                        DropdownMenuItem(
+                          value: c,
+                          child: Text(c, overflow: TextOverflow.ellipsis),
+                        ),
+                    ],
+                    onChanged: (v) => setState(() {
+                      _city = v!;
+                      _department = departmentOfCity(v) ?? _department;
+                    }),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    key: ValueKey('dep-$_department'),
+                    initialValue: _department.isEmpty ? null : _department,
+                    isExpanded: true,
+                    decoration: const InputDecoration(labelText: 'Département'),
+                    validator: (v) => v == null ? 'Obligatoire' : null,
+                    items: [
+                      for (final d in beninDepartments)
+                        DropdownMenuItem(value: d, child: Text(d)),
+                    ],
+                    onChanged: (v) => setState(() => _department = v!),
+                  ),
+                ),
               ],
-              onChanged: (v) => setState(() => _city = v!),
             ),
             if (widget.isPharmacy) ...[
               const SizedBox(height: 12),
@@ -317,6 +412,122 @@ class _PlaceFormScreenState extends State<PlaceFormScreen> {
         }
         return null;
       },
+    );
+  }
+}
+
+/// Carte « Importer depuis Google Maps » en tête du formulaire.
+class _MapsImportCard extends StatelessWidget {
+  const _MapsImportCard({
+    required this.controller,
+    required this.busy,
+    required this.imported,
+    required this.onPaste,
+    required this.onImport,
+  });
+
+  final TextEditingController controller;
+  final bool busy;
+  final MapsPlace? imported;
+  final VoidCallback onPaste;
+  final VoidCallback onImport;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = imported;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.okBg,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.travel_explore_rounded, color: AppColors.okFg),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Importer depuis Google Maps',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Dans Google Maps, ouvrez le lieu, touchez « Partager » puis '
+            '« Copier ». Collez ensuite le lien ici : nom, quartier, ville, '
+            'département et position se remplissent tout seuls.',
+            style: TextStyle(color: AppColors.okFg, fontSize: 13, height: 1.4),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: controller,
+            enabled: !busy,
+            minLines: 1,
+            maxLines: 3,
+            keyboardType: TextInputType.url,
+            decoration: InputDecoration(
+              hintText: 'Lien Google Maps ou coordonnées',
+              suffixIcon: IconButton(
+                tooltip: 'Coller',
+                onPressed: busy ? null : onPaste,
+                icon: const Icon(Icons.content_paste_rounded),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: busy ? null : onImport,
+              icon: busy
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2.5),
+                    )
+                  : const Icon(Icons.auto_fix_high_rounded, size: 20),
+              label: Text(busy ? 'Import en cours…' : 'Remplir le formulaire'),
+            ),
+          ),
+          if (p != null) ...[
+            const SizedBox(height: 12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  p.approximate
+                      ? Icons.warning_amber_rounded
+                      : Icons.check_circle_rounded,
+                  size: 18,
+                  color: p.approximate ? AppColors.waitFg : AppColors.okFg,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    p.approximate
+                        ? 'Position approximative : ce lien ne contient pas '
+                              'les coordonnées exactes du lieu. Vérifiez-la '
+                              'ou copiez les coordonnées depuis Google Maps.'
+                        : 'Position exacte importée. Vérifiez les champs '
+                              'ci-dessous puis enregistrez.',
+                    style: TextStyle(
+                      color: p.approximate ? AppColors.waitFg : AppColors.okFg,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      height: 1.35,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

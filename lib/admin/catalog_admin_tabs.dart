@@ -28,7 +28,11 @@ class _StationsAdminTabState extends State<StationsAdminTab> {
       tile: (s) => _CatalogTile(
         icon: Icons.local_gas_station_rounded,
         title: s.name,
-        subtitle: '${s.address} · ${s.city}',
+        subtitle: [
+          s.address,
+          s.city,
+          s.department,
+        ].where((e) => e.isNotEmpty).join(' · '),
         trailing: Pill.fuel(s.status),
         onTap: () =>
             _open(context, PlaceFormScreen(isPharmacy: false, station: s)),
@@ -60,7 +64,11 @@ class _PharmaciesAdminTabState extends State<PharmaciesAdminTab> {
       tile: (p) => _CatalogTile(
         icon: Icons.local_pharmacy_rounded,
         title: p.name,
-        subtitle: '${p.address} · ${p.city}',
+        subtitle: [
+          p.address,
+          p.city,
+          p.department,
+        ].where((e) => e.isNotEmpty).join(' · '),
         trailing: p.isOnDutyAt(now)
             ? const Pill(
                 label: 'De garde',
