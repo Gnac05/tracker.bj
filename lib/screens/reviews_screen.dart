@@ -137,35 +137,6 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
     }
   }
 
-  Future<void> _delete(Review r) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Supprimer cet avis ?'),
-        content: const Text('Il sera retiré et la note moyenne recalculée.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Annuler'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.koFg),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Supprimer'),
-          ),
-        ],
-      ),
-    );
-    if (ok != true) return;
-    try {
-      await repo.deleteReview(r);
-    } catch (_) {
-      if (mounted) {
-        showMessage(context, 'Suppression impossible.', error: true);
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<Review>>(
@@ -199,10 +170,12 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                         ),
                       ),
                     for (final r in reviews) ...[
-                      _ReviewCard(
+                      ReviewCard(
                         review: r,
                         mine: r.userId == uid,
-                        onDelete: repo.isAdmin.value ? () => _delete(r) : null,
+                        onDelete: repo.isAdmin.value
+                            ? () => confirmDeleteReview(context, r)
+                            : null,
                       ),
                       const SizedBox(height: 10),
                     ],
@@ -330,10 +303,51 @@ class _Bar extends StatelessWidget {
   }
 }
 
-class _ReviewCard extends StatelessWidget {
-  const _ReviewCard({required this.review, required this.mine, this.onDelete});
+/// Demande confirmation puis supprime un avis (modération administrateur).
+Future<void> confirmDeleteReview(BuildContext context, Review r) async {
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Supprimer cet avis ?'),
+      content: const Text('Il sera retiré et la note moyenne recalculée.'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Annuler'),
+        ),
+        FilledButton(
+          style: FilledButton.styleFrom(backgroundColor: AppColors.koFg),
+          onPressed: () => Navigator.pop(context, true),
+          child: const Text('Supprimer'),
+        ),
+      ],
+    ),
+  );
+  if (ok != true) return;
+  try {
+    await repo.deleteReview(r);
+    if (context.mounted) showMessage(context, 'Avis supprimé.');
+  } catch (_) {
+    if (context.mounted) {
+      showMessage(context, 'Suppression impossible.', error: true);
+    }
+  }
+}
+
+class ReviewCard extends StatelessWidget {
+  const ReviewCard({
+    super.key,
+    required this.review,
+    this.mine = false,
+    this.placeName,
+    this.onDelete,
+  });
+
   final Review review;
   final bool mine;
+
+  /// Nom du lieu, affiché en tête dans la liste de modération.
+  final String? placeName;
   final VoidCallback? onDelete;
 
   @override
@@ -345,6 +359,33 @@ class _ReviewCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (placeName != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10, right: 8),
+                child: Row(
+                  children: [
+                    Icon(
+                      review.isPharmacy
+                          ? Icons.local_pharmacy_rounded
+                          : Icons.local_gas_station_rounded,
+                      size: 16,
+                      color: AppColors.green,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        placeName!,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: AppColors.greenDark,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             Row(
               children: [
                 CircleAvatar(

@@ -58,6 +58,7 @@ Dans ce mode, n'importe quel e-mail et mot de passe ouvrent le back office.
 
 | Onglet | Rôle |
 | --- | --- |
+| Avis | Derniers avis des usagers, tous lieux confondus : recherche, filtres (notes basses, stations, pharmacies) et suppression. |
 | Signalements | Voir la photo, la distance entre l'utilisateur et la station, puis **Certifier** (met à jour la station) ou **Rejeter**. |
 | Garde de la semaine | Choisir la période, cocher les pharmacies de la liste officielle, **Publier**. |
 | Stations / Pharmacies | Ajouter, modifier, supprimer. Le formulaire se remplit depuis Google Maps (voir ci-dessous) ou avec « Utiliser ma position ». |

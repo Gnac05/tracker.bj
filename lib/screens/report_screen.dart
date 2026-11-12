@@ -143,7 +143,13 @@ class _ReportScreenState extends State<ReportScreen> {
                       _station!.name,
                       style: const TextStyle(fontWeight: FontWeight.w700),
                     ),
-                    subtitle: Text('${_station!.address} · ${_station!.city}'),
+                    subtitle: Text(
+                      placeLine(
+                        _station!.address,
+                        _station!.city,
+                        _station!.department,
+                      ),
+                    ),
                     trailing: TextButton(
                       onPressed: _sending ? null : _pickStation,
                       child: const Text('Changer'),
@@ -466,7 +472,9 @@ class _StationPickerState extends State<_StationPicker> {
                           s.name,
                           style: const TextStyle(fontWeight: FontWeight.w700),
                         ),
-                        subtitle: Text('${s.address} · ${s.city}'),
+                        subtitle: Text(
+                          placeLine(s.address, s.city, s.department),
+                        ),
                         trailing: Text(
                           formatDistance(d),
                           style: const TextStyle(

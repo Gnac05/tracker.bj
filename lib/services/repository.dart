@@ -34,6 +34,9 @@ abstract class Repository {
   /// Avis d'un lieu, du plus récent au plus ancien.
   Stream<List<Review>> watchReviews(String placeId);
 
+  /// Derniers avis, tous lieux confondus (modération du back office).
+  Stream<List<Review>> watchAllReviews();
+
   /// Crée ou remplace l'avis de l'usager courant sur ce lieu et met à jour
   /// la note moyenne.
   Future<void> submitReview({

@@ -206,6 +206,13 @@ class FirebaseRepository implements Repository {
       .snapshots()
       .map((s) => s.docs.map((d) => Review.fromMap(d.id, d.data())).toList());
 
+  @override
+  Stream<List<Review>> watchAllReviews() => _reviews
+      .orderBy('updatedAt', descending: true)
+      .limit(200)
+      .snapshots()
+      .map((s) => s.docs.map((d) => Review.fromMap(d.id, d.data())).toList());
+
   DocumentReference<Map<String, dynamic>> _place(String id, bool isPharmacy) =>
       (isPharmacy ? _pharmacies : _stations).doc(id);
 

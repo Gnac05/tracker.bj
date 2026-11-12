@@ -356,6 +356,11 @@ class DemoRepository implements Repository {
   );
 
   @override
+  Stream<List<Review>> watchAllReviews() => _reviews.watch().map(
+    (l) => l.toList()..sort((a, b) => b.updatedAt.compareTo(a.updatedAt)),
+  );
+
+  @override
   Future<void> submitReview({
     required String placeId,
     required bool isPharmacy,

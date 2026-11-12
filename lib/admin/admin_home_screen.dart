@@ -5,6 +5,7 @@ import '../theme.dart';
 import 'catalog_admin_tabs.dart';
 import 'duty_admin_tab.dart';
 import 'reports_admin_tab.dart';
+import 'reviews_admin_tab.dart';
 
 /// Back office : signalements, stations, pharmacies et liste de garde.
 class AdminHomeScreen extends StatelessWidget {
@@ -18,7 +19,7 @@ class AdminHomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 4,
+      length: 5,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Administration'),
@@ -42,6 +43,7 @@ class AdminHomeScreen extends StatelessWidget {
             labelStyle: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
             tabs: [
               Tab(text: 'Signalements'),
+              Tab(text: 'Avis'),
               Tab(text: 'Garde de la semaine'),
               Tab(text: 'Stations'),
               Tab(text: 'Pharmacies'),
@@ -51,6 +53,7 @@ class AdminHomeScreen extends StatelessWidget {
         body: const TabBarView(
           children: [
             ReportsAdminTab(),
+            ReviewsAdminTab(),
             DutyAdminTab(),
             StationsAdminTab(),
             PharmaciesAdminTab(),

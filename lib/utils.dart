@@ -106,6 +106,12 @@ String? matchCity(String? label) {
   return null;
 }
 
+/// « Cadjèhoun · Cotonou, Littoral » : ligne de localisation d'un lieu.
+String placeLine(String address, String city, String department) {
+  final town = [city, department].where((e) => e.isNotEmpty).join(', ');
+  return [address, town].where((e) => e.isNotEmpty).join(' · ');
+}
+
 /// « 4,3 » : note moyenne à une décimale.
 String formatRating(double r) => r.toStringAsFixed(1).replaceAll('.', ',');
 

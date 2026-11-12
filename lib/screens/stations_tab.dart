@@ -170,7 +170,11 @@ class _StationCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${station.address} · ${station.city}',
+                        placeLine(
+                          station.address,
+                          station.city,
+                          station.department,
+                        ),
                         style: const TextStyle(
                           color: AppColors.muted,
                           fontSize: 13.5,

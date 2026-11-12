@@ -202,7 +202,11 @@ class _PharmacyCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${pharmacy.address} · ${pharmacy.city}',
+                        placeLine(
+                          pharmacy.address,
+                          pharmacy.city,
+                          pharmacy.department,
+                        ),
                         style: const TextStyle(
                           color: AppColors.muted,
                           fontSize: 13.5,
