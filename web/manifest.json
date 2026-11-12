@@ -1,12 +1,11 @@
 {
-    "name": "tracker",
-    "short_name": "tracker",
+    "name": "Tracker Bénin",
+    "short_name": "Tracker Bénin",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
+    "background_color": "#F5F7F4",
+    "theme_color": "#008751",
     "description": "Stations-service avec essence et pharmacies de garde au Bénin",
-    "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
         {
@@ -31,5 +30,6 @@
             "type": "image/png",
             "purpose": "maskable"
         }
-    ]
+    ],
+    "lang": "fr"
 }

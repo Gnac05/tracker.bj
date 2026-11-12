@@ -54,6 +54,37 @@ Dans ce mode, n'importe quel e-mail et mot de passe ouvrent le back office.
    - copier son **UID** ;
    - console → Firestore → collection `admins` → nouveau document dont l'**ID est cet UID** (un champ `name` suffit).
 
+## Version web
+
+La même base de code tourne dans un navigateur et s'adapte à la taille de l'écran :
+
+| Largeur | Mise en page |
+| --- | --- |
+| moins de 720 px (téléphone) | barre de navigation en bas, cartes sur une colonne, écrans secondaires en pleine page |
+| 720 px et plus (tablette, ordinateur) | navigation latérale, cartes sur 2 à 4 colonnes, écrans secondaires (signalement, avis, formulaires, connexion) en fenêtre centrée |
+| 1100 px et plus | navigation latérale étendue avec le nom de l'application |
+
+Particularités du navigateur :
+
+- **Photo de preuve** : la photo est prise avec la caméra du navigateur (flux vidéo en direct), sans sélecteur de fichiers, donc sans accès à la galerie. Le site doit être servi en **HTTPS** (ou `localhost`) pour que le navigateur autorise la caméra et la position.
+- **Import Google Maps** : les liens courts `maps.app.goo.gl` ne peuvent pas être résolus par un navigateur ; coller le lien complet ou les coordonnées.
+
+Lancer en local :
+
+```bash
+flutter run -d chrome
+```
+
+Publier sur Firebase Hosting (après `flutterfire configure`, en y incluant la plateforme web) :
+
+```bash
+flutter build web --release
+```
+
+```bash
+firebase deploy --only hosting
+```
+
 ## Utilisation du back office
 
 | Onglet | Rôle |

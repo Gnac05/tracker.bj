@@ -6,6 +6,12 @@
       "runtimeExecutable": "flutter",
       "runtimeArgs": ["run", "-d", "web-server", "--web-port", "8765", "--web-hostname", "localhost"],
       "port": 8765
+    },
+    {
+      "name": "tracker-web-build",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8766", "--directory", "build/web"],
+      "port": 8766
     }
   ]
 }
