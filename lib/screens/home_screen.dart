@@ -5,6 +5,7 @@ import '../admin/admin_login_screen.dart';
 import '../services/location_service.dart';
 import '../services/repository.dart';
 import '../theme.dart';
+import '../widgets/responsive.dart';
 import 'pharmacies_tab.dart';
 import 'report_screen.dart';
 import 'stations_tab.dart';
@@ -20,17 +21,103 @@ class _HomeScreenState extends State<HomeScreen> {
   int _tab = 0;
 
   void _openAdmin() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => repo.isAdmin.value
-            ? const AdminHomeScreen()
-            : const AdminLoginScreen(),
+    if (repo.isAdmin.value) {
+      Navigator.of(context)
+          .push(MaterialPageRoute(builder: (_) => const AdminHomeScreen()));
+    } else {
+      openPage(context, const AdminLoginScreen());
+    }
+  }
+
+  static const _destinations = [
+    (
+      Icons.local_gas_station_outlined,
+      Icons.local_gas_station_rounded,
+      'Essence',
+    ),
+    (Icons.local_pharmacy_outlined, Icons.local_pharmacy_rounded, 'Pharmacies'),
+  ];
+
+  /// Navigation latérale des grands écrans (étendue au-delà de 1100 px).
+  Widget _rail(double width) {
+    final extended = width >= 1100;
+    return NavigationRail(
+      extended: extended,
+      minExtendedWidth: 210,
+      backgroundColor: Colors.white,
+      indicatorColor: AppColors.okBg,
+      selectedIndex: _tab,
+      onDestinationSelected: (i) => setState(() => _tab = i),
+      labelType: extended
+          ? NavigationRailLabelType.none
+          : NavigationRailLabelType.all,
+      selectedIconTheme: const IconThemeData(color: AppColors.greenDark),
+      unselectedIconTheme: const IconThemeData(color: AppColors.muted),
+      selectedLabelTextStyle: const TextStyle(
+        color: AppColors.greenDark,
+        fontWeight: FontWeight.w800,
+        fontSize: 13.5,
       ),
+      unselectedLabelTextStyle: const TextStyle(
+        color: AppColors.muted,
+        fontWeight: FontWeight.w600,
+        fontSize: 13.5,
+      ),
+      leading: Padding(
+        padding: const EdgeInsets.fromLTRB(8, 12, 8, 20),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AppColors.green,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Icon(Icons.near_me_rounded, color: Colors.white),
+            ),
+            if (extended) ...[
+              const SizedBox(width: 12),
+              const Text(
+                'Tracker Bénin',
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
+              ),
+            ],
+          ],
+        ),
+      ),
+      destinations: [
+        for (final d in _destinations)
+          NavigationRailDestination(
+            icon: Icon(d.$1),
+            selectedIcon: Icon(d.$2),
+            label: Text(d.$3),
+          ),
+      ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final wide = width >= kWideBreakpoint;
+    final page = _page(wide);
+    if (!wide) return page;
+    return Scaffold(
+      body: SafeArea(
+        child: Row(
+          children: [
+            _rail(width),
+            const VerticalDivider(width: 1),
+            Expanded(child: page),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _page(bool wide) {
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 68,
@@ -85,31 +172,27 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       floatingActionButton: _tab == 0
           ? FloatingActionButton.extended(
-              onPressed: () => Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (_) => const ReportScreen())),
+              onPressed: () => openPage(context, const ReportScreen()),
               backgroundColor: AppColors.ink,
               foregroundColor: Colors.white,
               icon: const Icon(Icons.photo_camera_rounded),
               label: const Text('Signaler'),
             )
           : null,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _tab,
-        onDestinationSelected: (i) => setState(() => _tab = i),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.local_gas_station_outlined),
-            selectedIcon: Icon(Icons.local_gas_station_rounded),
-            label: 'Essence',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.local_pharmacy_outlined),
-            selectedIcon: Icon(Icons.local_pharmacy_rounded),
-            label: 'Pharmacies',
-          ),
-        ],
-      ),
+      bottomNavigationBar: wide
+          ? null
+          : NavigationBar(
+              selectedIndex: _tab,
+              onDestinationSelected: (i) => setState(() => _tab = i),
+              destinations: [
+                for (final d in _destinations)
+                  NavigationDestination(
+                    icon: Icon(d.$1),
+                    selectedIcon: Icon(d.$2),
+                    label: d.$3,
+                  ),
+              ],
+            ),
     );
   }
 }

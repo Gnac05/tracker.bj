@@ -5,6 +5,7 @@ import '../services/repository.dart';
 import '../theme.dart';
 import '../utils.dart';
 import '../widgets/common.dart';
+import '../widgets/responsive.dart';
 import 'report_screen.dart';
 import 'reviews_screen.dart';
 
@@ -92,9 +93,8 @@ class _StationsTabState extends State<StationsTab> {
           else
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
-              sliver: SliverList.separated(
+              sliver: SliverCardGrid(
                 itemCount: items.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 12),
                 itemBuilder: (context, i) => _StationCard(
                   station: items[i].$1,
                   distance: items[i].$2,
@@ -142,81 +142,87 @@ class _StationCard extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
+            Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                IconBadge(
-                  icon: Icons.local_gas_station_rounded,
-                  bg: ok
-                      ? AppColors.okBg
-                      : ko
-                      ? AppColors.koBg
-                      : AppColors.neutralBg,
-                  fg: ok
-                      ? AppColors.okFg
-                      : ko
-                      ? AppColors.koFg
-                      : AppColors.muted,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        station.name,
-                        style: Theme.of(context).textTheme.titleMedium,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    IconBadge(
+                      icon: Icons.local_gas_station_rounded,
+                      bg: ok
+                          ? AppColors.okBg
+                          : ko
+                          ? AppColors.koBg
+                          : AppColors.neutralBg,
+                      fg: ok
+                          ? AppColors.okFg
+                          : ko
+                          ? AppColors.koFg
+                          : AppColors.muted,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            station.name,
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            placeLine(
+                              station.address,
+                              station.city,
+                              station.department,
+                            ),
+                            style: const TextStyle(
+                              color: AppColors.muted,
+                              fontSize: 13.5,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          RatingLink(
+                            placeId: station.id,
+                            placeName: station.name,
+                            isPharmacy: false,
+                            rating: station.rating,
+                            count: station.ratingCount,
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 2),
+                    ),
+                    const SizedBox(width: 8),
+                    DistanceLabel(distance),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Pill.fuel(station.status),
+                    if (nearest)
+                      const Pill(
+                        label: 'La plus proche',
+                        bg: AppColors.waitBg,
+                        fg: AppColors.waitFg,
+                        icon: Icons.bolt_rounded,
+                      ),
+                    if (station.statusUpdatedAt != null)
                       Text(
-                        placeLine(
-                          station.address,
-                          station.city,
-                          station.department,
-                        ),
+                        'Certifié ${timeAgo(station.statusUpdatedAt!)}',
                         style: const TextStyle(
                           color: AppColors.muted,
-                          fontSize: 13.5,
+                          fontSize: 12.5,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      RatingLink(
-                        placeId: station.id,
-                        placeName: station.name,
-                        isPharmacy: false,
-                        rating: station.rating,
-                        count: station.ratingCount,
-                      ),
-                    ],
-                  ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                DistanceLabel(distance),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                Pill.fuel(station.status),
-                if (nearest)
-                  const Pill(
-                    label: 'La plus proche',
-                    bg: AppColors.waitBg,
-                    fg: AppColors.waitFg,
-                    icon: Icons.bolt_rounded,
-                  ),
-                if (station.statusUpdatedAt != null)
-                  Text(
-                    'Certifié ${timeAgo(station.statusUpdatedAt!)}',
-                    style: const TextStyle(
-                      color: AppColors.muted,
-                      fontSize: 12.5,
-                    ),
-                  ),
               ],
             ),
             const SizedBox(height: 14),
@@ -228,11 +234,8 @@ class _StationCard extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => ReportScreen(station: station),
-                      ),
-                    ),
+                    onPressed: () =>
+                        openPage(context, ReportScreen(station: station)),
                     icon: const Icon(Icons.photo_camera_outlined, size: 20),
                     label: const Text('Signaler'),
                   ),

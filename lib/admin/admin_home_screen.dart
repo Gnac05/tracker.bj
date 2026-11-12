@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../services/repository.dart';
 import '../theme.dart';
+import '../widgets/responsive.dart';
 import 'catalog_admin_tabs.dart';
 import 'duty_admin_tab.dart';
 import 'reports_admin_tab.dart';
@@ -50,14 +51,16 @@ class AdminHomeScreen extends StatelessWidget {
             ],
           ),
         ),
-        body: const TabBarView(
-          children: [
-            ReportsAdminTab(),
-            ReviewsAdminTab(),
-            DutyAdminTab(),
-            StationsAdminTab(),
-            PharmaciesAdminTab(),
-          ],
+        body: const ContentWidth(
+          child: TabBarView(
+            children: [
+              ReportsAdminTab(),
+              ReviewsAdminTab(),
+              DutyAdminTab(),
+              StationsAdminTab(),
+              PharmaciesAdminTab(),
+            ],
+          ),
         ),
       ),
     );

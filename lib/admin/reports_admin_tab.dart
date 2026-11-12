@@ -137,6 +137,7 @@ class _ReportCard extends StatelessWidget {
       return Image.network(
         report.photoUrl!,
         fit: fit,
+        webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
         loadingBuilder: (context, child, progress) => progress == null
             ? child
             : const Center(child: CircularProgressIndicator()),

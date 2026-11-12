@@ -41,6 +41,21 @@ class _DutyAdminTabState extends State<DutyAdminTab> {
       ),
       helpText: 'Période de garde',
       saveText: 'Valider',
+      // Sur grand écran, le calendrier s'ouvre en fenêtre et non en plein écran.
+      builder: (context, child) => MediaQuery.sizeOf(context).width < 720
+          ? child!
+          : Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: 460,
+                  maxHeight: 680,
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: child,
+                ),
+              ),
+            ),
     );
     if (picked == null) return;
     setState(() {

@@ -5,6 +5,7 @@ import '../services/repository.dart';
 import '../theme.dart';
 import '../utils.dart';
 import '../widgets/common.dart';
+import '../widgets/responsive.dart';
 import 'reviews_screen.dart';
 
 class PharmaciesTab extends StatefulWidget {
@@ -80,9 +81,8 @@ class _PharmaciesTabState extends State<PharmaciesTab> {
             ),
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-              sliver: SliverList.separated(
+              sliver: SliverCardGrid(
                 itemCount: items.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 12),
                 itemBuilder: (context, i) => _PharmacyCard(
                   pharmacy: items[i].$1,
                   distance: items[i].$2,
@@ -182,69 +182,75 @@ class _PharmacyCard extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
+            Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const IconBadge(
-                  icon: Icons.local_pharmacy_rounded,
-                  bg: AppColors.okBg,
-                  fg: AppColors.okFg,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        pharmacy.name,
-                        style: Theme.of(context).textTheme.titleMedium,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const IconBadge(
+                      icon: Icons.local_pharmacy_rounded,
+                      bg: AppColors.okBg,
+                      fg: AppColors.okFg,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            pharmacy.name,
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            placeLine(
+                              pharmacy.address,
+                              pharmacy.city,
+                              pharmacy.department,
+                            ),
+                            style: const TextStyle(
+                              color: AppColors.muted,
+                              fontSize: 13.5,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          RatingLink(
+                            placeId: pharmacy.id,
+                            placeName: pharmacy.name,
+                            isPharmacy: true,
+                            rating: pharmacy.rating,
+                            count: pharmacy.ratingCount,
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        placeLine(
-                          pharmacy.address,
-                          pharmacy.city,
-                          pharmacy.department,
-                        ),
-                        style: const TextStyle(
-                          color: AppColors.muted,
-                          fontSize: 13.5,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      RatingLink(
-                        placeId: pharmacy.id,
-                        placeName: pharmacy.name,
-                        isPharmacy: true,
-                        rating: pharmacy.rating,
-                        count: pharmacy.ratingCount,
-                      ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(width: 8),
+                    DistanceLabel(distance),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                DistanceLabel(distance),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              children: [
-                const Pill(
-                  label: 'De garde',
-                  bg: AppColors.okBg,
-                  fg: AppColors.okFg,
-                  icon: Icons.nightlight_round,
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: [
+                    const Pill(
+                      label: 'De garde',
+                      bg: AppColors.okBg,
+                      fg: AppColors.okFg,
+                      icon: Icons.nightlight_round,
+                    ),
+                    if (nearest)
+                      const Pill(
+                        label: 'La plus proche',
+                        bg: AppColors.waitBg,
+                        fg: AppColors.waitFg,
+                        icon: Icons.bolt_rounded,
+                      ),
+                  ],
                 ),
-                if (nearest)
-                  const Pill(
-                    label: 'La plus proche',
-                    bg: AppColors.waitBg,
-                    fg: AppColors.waitFg,
-                    icon: Icons.bolt_rounded,
-                  ),
               ],
             ),
             const SizedBox(height: 14),

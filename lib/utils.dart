@@ -174,6 +174,8 @@ void showMessage(BuildContext context, String text, {bool error = false}) {
     ..showSnackBar(
       SnackBar(
         content: Text(text),
+        // Sur grand écran, un message compact plutôt qu'un bandeau pleine largeur.
+        width: MediaQuery.sizeOf(context).width >= 720 ? 440 : null,
         backgroundColor: error ? const Color(0xFFB80D24) : null,
       ),
     );

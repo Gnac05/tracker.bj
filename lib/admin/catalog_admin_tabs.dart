@@ -4,6 +4,7 @@ import '../models.dart';
 import '../services/repository.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
+import '../widgets/responsive.dart';
 import 'place_form_screen.dart';
 
 /// Annuaire des stations (ajout, modification, suppression).
@@ -83,8 +84,7 @@ class _PharmaciesAdminTabState extends State<PharmaciesAdminTab> {
   }
 }
 
-void _open(BuildContext context, Widget screen) =>
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
+void _open(BuildContext context, Widget screen) => openPage(context, screen);
 
 class _Catalog<T> extends StatefulWidget {
   const _Catalog({

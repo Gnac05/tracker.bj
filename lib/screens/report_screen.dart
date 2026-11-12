@@ -1,13 +1,14 @@
-import 'dart:typed_data';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../models.dart';
+import '../services/live_camera.dart';
 import '../services/repository.dart';
 import '../theme.dart';
 import '../utils.dart';
 import '../widgets/common.dart';
+import '../widgets/responsive.dart';
 
 /// Signalement de la disponibilité d'essence, avec photo prise en direct.
 class ReportScreen extends StatefulWidget {
@@ -33,6 +34,7 @@ class _ReportScreenState extends State<ReportScreen> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      constraints: sheetConstraints,
       backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -45,15 +47,20 @@ class _ReportScreenState extends State<ReportScreen> {
   /// Ouvre directement l'appareil photo : la galerie n'est jamais proposée.
   Future<void> _takePhoto() async {
     try {
-      final shot = await ImagePicker().pickImage(
-        source: ImageSource.camera,
-        preferredCameraDevice: CameraDevice.rear,
-        maxWidth: 1280,
-        imageQuality: 60,
-      );
-      if (shot == null) return;
-      final bytes = await shot.readAsBytes();
-      if (mounted) setState(() => _photo = bytes);
+      Uint8List? bytes;
+      if (kIsWeb) {
+        // Navigateur : flux vidéo de la caméra, sans accès aux fichiers.
+        bytes = await captureLivePhoto(context);
+      } else {
+        final shot = await ImagePicker().pickImage(
+          source: ImageSource.camera,
+          preferredCameraDevice: CameraDevice.rear,
+          maxWidth: 1280,
+          imageQuality: 60,
+        );
+        bytes = await shot?.readAsBytes();
+      }
+      if (bytes != null && mounted) setState(() => _photo = bytes);
     } catch (_) {
       if (mounted) {
         showMessage(

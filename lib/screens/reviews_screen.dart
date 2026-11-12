@@ -5,6 +5,7 @@ import '../services/repository.dart';
 import '../theme.dart';
 import '../utils.dart';
 import '../widgets/common.dart';
+import '../widgets/responsive.dart';
 
 const _star = Color(0xFFF5A300);
 
@@ -55,13 +56,12 @@ class RatingLink extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       borderRadius: BorderRadius.circular(8),
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => ReviewsScreen(
-            placeId: placeId,
-            placeName: placeName,
-            isPharmacy: isPharmacy,
-          ),
+      onTap: () => openPage(
+        context,
+        ReviewsScreen(
+          placeId: placeId,
+          placeName: placeName,
+          isPharmacy: isPharmacy,
         ),
       ),
       child: Padding(
@@ -122,6 +122,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      constraints: sheetConstraints,
       backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
